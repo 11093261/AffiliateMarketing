@@ -24,16 +24,30 @@ const Signup = () => {
 
         
 // ✅ CORRECT: The 'await' is inside an 'async' function.
-const handleSubmit = async (event) => { // <-- Note the 'async' keyword here
+const handleSubmit = async (event) => {
   event.preventDefault();
+
+  // ✅ 1. DEFINE the Base_url here, before using it.
+  // This is the most likely fix for your error.
+  const Base_url = import.meta.env.VITE_API_BASE_URL;
+
+  // ✅ 2. (Optional but recommended) Add a safety check
+  if (!Base_url) {
+    console.error("API Base URL is not defined in environment variables.");
+    // You can also show an error message to the user here
+    return;
+  }
+
   try {
-    const response = await axios.post(`${Base_url}/api/register`, formData); // <-- This is now valid
+    // ✅ 3. Now Base_url is defined and can be used safely
+    const response = await axios.post(`${Base_url}/api/register`, formData);
     console.log(response.data);
+    // Handle successful registration (e.g., redirect user, show success message)
   } catch (error) {
-    console.error(error);
+    console.error("Registration failed:", error);
+    // Handle errors (e.g., show error message to the user)
   }
 };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
