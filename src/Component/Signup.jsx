@@ -19,8 +19,8 @@ const Signup = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
   };
-  const former = https://afffiliate.onrender.com
-  const real = hregisterttp://localhost:4500/api/
+  // const former = https://afffiliate.onrender.com
+  
 
         
 
