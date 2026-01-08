@@ -23,21 +23,17 @@ const Signup = () => {
   
 
         
+// ✅ CORRECT: The 'await' is inside an 'async' function.
+const handleSubmit = async (event) => { // <-- Note the 'async' keyword here
+  event.preventDefault();
+  try {
+    const response = await axios.post(`${Base_url}/api/register`, formData); // <-- This is now valid
+    console.log(response.data);
+  } catch (error) {
+    console.error(error);
+  }
+};
 
-  const handleSubmit = async(formData) => {
-    try {
-      const Base_url = import.meta.env.VITE_URL
-      https://afffiliate.onrender.com/api/register
-
-        const response = await axios.post(`${Base_url}/api/register`,formData)
-        
-    } catch (error) {
-        
-    }
-    console.log('Signup data:', formData);
-    navigate("/Dashboard")
-    
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
