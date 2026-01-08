@@ -29,7 +29,7 @@ const handleSubmit = async (event) => {
 
   // ✅ 1. DEFINE the Base_url here, before using it.
   // This is the most likely fix for your error.
-  const Base_url = import.meta.env.VITE_API_BASE_URL;
+  const Base_url = import.meta.env.VITE_API_URL;
 
   // ✅ 2. (Optional but recommended) Add a safety check
   if (!Base_url) {
