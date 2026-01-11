@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from "axios"
+import axios from "axios";
+
 const Signup = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -10,7 +11,9 @@ const Signup = () => {
     phone: '',
     terms: false
   });
-  const navigate = useNavigate()
+  const [isLoading, setIsLoading] = useState(false); // Added loading state
+  const [errorMessage, setErrorMessage] = useState(''); // Added error display
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -18,41 +21,103 @@ const Signup = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    // Clear error when user starts typing again
+    if (errorMessage) setErrorMessage('');
   };
-  // const former = https://afffiliate.onrender.com
-  
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    
+    // ✅ FIXED: Correct backend URL (changed from afffiliate to affiliate)
+    const Base_url = import.meta.env.VITE_API_URL || "https://affiliate.onrender.com";
+    
+    // ✅ Enhanced validation
+    if (!Base_url) {
+      const errorMsg = "API Base URL is not defined.";
+      console.error(errorMsg);
+      setErrorMessage("System configuration error. Please contact support.");
+      return;
+    }
+
+    // Validate required fields
+    if (!formData.name || !formData.email || !formData.password || !formData.phone) {
+      setErrorMessage("Please fill in all required fields.");
+      return;
+    }
+
+    if (!formData.terms) {
+      setErrorMessage("You must agree to the Terms and Privacy Policy.");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage('');
+
+    try {
+      console.log(`Attempting to register via: ${Base_url}/api/register`);
+      
+      const response = await axios.post(`${Base_url}/api/register`, formData, {
+        timeout: 10000, // 10 second timeout
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log("Registration successful:", response.data);
+      
+      // ✅ Success handling
+      if (response.data.success) {
+        // Show success message (you can replace with a toast/notification)
+        alert(`Welcome ${formData.name}! Registration successful.`);
         
-// ✅ CORRECT: The 'await' is inside an 'async' function.
-const handleSubmit = async (event) => {
-  event.preventDefault();
+        // Clear form
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          company: '',
+          phone: '',
+          terms: false
+        });
+        
+        // Redirect to login or dashboard
+        navigate('/login');
+      } else {
+        // Handle API-level errors (e.g., email already exists)
+        setErrorMessage(response.data.message || "Registration failed. Please try again.");
+      }
+      
+    } catch (error) {
+      console.error("Registration failed:", error);
+      
+      // ✅ Comprehensive error handling
+      if (error.response) {
+        // Server responded with error status
+        if (error.response.status === 409) {
+          setErrorMessage("Email already registered. Please use a different email or login.");
+        } else if (error.response.status === 400) {
+          setErrorMessage(error.response.data.message || "Invalid input. Please check your details.");
+        } else {
+          setErrorMessage(`Server error (${error.response.status}). Please try again later.`);
+        }
+      } else if (error.request) {
+        // Request made but no response
+        setErrorMessage("Cannot reach the server. Please check your internet connection.");
+      } else if (error.code === 'ECONNABORTED') {
+        setErrorMessage("Request timeout. Please try again.");
+      } else {
+        setErrorMessage("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // ✅ 1. DEFINE the Base_url here, before using it.
-  // This is the most likely fix for your error.
-  const Base_url = import.meta.env.VITE_API_URL;
-
-  // ✅ 2. (Optional but recommended) Add a safety check
-  if (!Base_url) {
-    console.error("API Base URL is not defined in environment variables.");
-    // You can also show an error message to the user here
-    return;
-  }
-
-  try {
-    // ✅ 3. Now Base_url is defined and can be used safely
-    const response = await axios.post(`${Base_url}/api/register`, formData);
-    console.log(response.data);
-    // Handle successful registration (e.g., redirect user, show success message)
-  } catch (error) {
-    console.error("Registration failed:", error);
-    // Handle errors (e.g., show error message to the user)
-  }
-};
-
-  return (
+  // Render function continues below...
+return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Custom Logo */}
+        {/* Logo and header section - unchanged */}
         <div className="flex justify-center">
           <div className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-2xl p-4 w-20 h-20 flex items-center justify-center shadow-lg">
             <div className="relative">
@@ -76,7 +141,15 @@ const handleSubmit = async (event) => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-xl rounded-2xl sm:px-10 border border-indigo-50">
+          {/* ✅ Added error message display */}
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
+              {errorMessage}
+            </div>
+          )}
+          
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Form fields remain exactly the same */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                 Full Name
@@ -180,9 +253,18 @@ const handleSubmit = async (event) => {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
+                disabled={isLoading}
+                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                Create Account
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : 'Create Account'}
               </button>
             </div>
           </form>
@@ -200,12 +282,12 @@ const handleSubmit = async (event) => {
             </div>
 
             <div className="mt-6">
-              <a 
-                href="#" 
+              <button 
+                onClick={() => navigate('/login')}
                 className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 Sign in
-              </a>
+              </button>
             </div>
           </div>
         </div>
