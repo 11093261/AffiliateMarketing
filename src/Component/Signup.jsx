@@ -4,7 +4,7 @@ import axios from "axios";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
     company: '',
@@ -29,7 +29,7 @@ const Signup = () => {
     event.preventDefault();
     
     // ✅ FIXED: Correct backend URL (changed from afffiliate to affiliate)
-    const Base_url = import.meta.env.VITE_API_URL || "https://affiliate.onrender.com";
+    const Base_url = import.meta.env.VITE_API_URL || "https://afffiliate.onrender.com" || "http://localhost:4500";
     
     // ✅ Enhanced validation
     if (!Base_url) {
@@ -40,7 +40,7 @@ const Signup = () => {
     }
 
     // Validate required fields
-    if (!formData.name || !formData.email || !formData.password || !formData.phone) {
+    if (!formData.username || !formData.email || !formData.password || !formData.phone) {
       setErrorMessage("Please fill in all required fields.");
       return;
     }
@@ -72,7 +72,7 @@ const Signup = () => {
         
         // Clear form
         setFormData({
-          name: '',
+          username: '',
           email: '',
           password: '',
           company: '',
@@ -156,11 +156,11 @@ return (
               </label>
               <div className="mt-1">
                 <input
-                  id="name"
-                  name="name"
+                  id="username"
+                  name="username"
                   type="text"
                   required
-                  value={formData.name}
+                  value={formData.username}
                   onChange={handleChange}
                   className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
