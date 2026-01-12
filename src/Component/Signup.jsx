@@ -81,7 +81,7 @@ const Signup = () => {
         });
         
         // Redirect to login or dashboard
-        navigate('/Marketplace');
+        navigate('/Dashboard');
       } else {
         // Handle API-level errors (e.g., email already exists)
         setErrorMessage(response.data.message || "Registration failed. Please try again.");
