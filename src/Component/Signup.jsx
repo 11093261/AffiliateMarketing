@@ -68,7 +68,7 @@ const Signup = () => {
       // ✅ Success handling
       if (response.data.success) {
         // Show success message (you can replace with a toast/notification)
-        alert(`Welcome ${formData.name}! Registration successful.`);
+        alert(`Welcome ${formData.username}! Registration successful.`);
         
         // Clear form
         setFormData({
@@ -81,7 +81,7 @@ const Signup = () => {
         });
         
         // Redirect to login or dashboard
-        navigate('/login');
+        navigate('/Marketplace');
       } else {
         // Handle API-level errors (e.g., email already exists)
         setErrorMessage(response.data.message || "Registration failed. Please try again.");
