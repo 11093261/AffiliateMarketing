@@ -1,5 +1,6 @@
 // src/pages/program/ProgramDetail.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../Component/context/AuthContext';
 import { 
   ArrowLeftIcon, 
   DocumentDuplicateIcon,  // Fixed: Replaced LinkIcon with DocumentDuplicateIcon
@@ -14,6 +15,41 @@ import {
 const Program = () => {
   const [copied, setCopied] = useState(false);
   const [selectedTab, setSelectedTab] = useState('overview');
+  const { getAuthToken, user: authUser, logout } = useAuth();
+  const [programs,setprograms] = useState({
+    name:"",
+    description:"",
+    category:"",
+    commission:"",
+    rating:0,
+    cookieDuration:"",
+    averageEarning:"",
+    payoutMethods:[""],
+    performance:"",
+    terms:"",
+    promotionalMaterials:[
+      {
+        id:0,
+        type:"",
+        size:"",
+        preview:"",
+        content:"",
+        terms:""
+
+
+
+
+      }
+    ]
+
+
+
+
+
+
+
+
+  })
   
   // Sample program data (replace with API data)
   const program = {
@@ -41,6 +77,38 @@ const Program = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+  const BASE_URL = "http://localhost:4500"
+  useEffect(()=>{
+    const fecthProgramData = async()=>{
+      try {
+        if (typeof getAuthToken !== 'function') {
+        throw new Error('getAuthToken is not available. Authentication may have failed.');
+      }
+      
+      const token = getAuthToken();
+      
+      
+      if (!token) {
+        throw new Error('No authentication token found. Please login again.');
+      }
+
+        const res = await fetch(`${BASE_URL}/api/postprogram`,{
+          method:'GET',
+          headers: {
+          'Authorization': `Bearer ${token}`,
+          
+          'Content-Type': 'application/json'
+        }
+
+        })
+        setprograms(res.data)
+        
+      } catch (error) {
+        
+      }
+    }
+    fecthProgramData()
+  },[])
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -67,14 +135,14 @@ const Program = () => {
             <div className="flex-1">
               <div className="flex flex-wrap justify-between items-start">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{program.name}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">{program.name || programs.name}</h1>
                   <div className="flex items-center mt-2">
                     <div className="flex items-center text-amber-500">
                       <StarIcon className="h-5 w-5" aria-hidden="true" />
-                      <span className="ml-1 font-medium">{program.rating}</span>
+                      <span className="ml-1 font-medium">{program.rating || program.rating}</span>
                     </div>
                     <span className="mx-2 text-gray-300">•</span>
-                    <span className="text-gray-600">{program.category}</span>
+                    <span className="text-gray-600">{program.category || programs.category}</span>
                   </div>
                 </div>
                 
@@ -88,7 +156,7 @@ const Program = () => {
                 </div>
               </div>
               
-              <p className="mt-4 text-gray-600">{program.description}</p>
+              <p className="mt-4 text-gray-600">{program.description || programs.description}</p>
             </div>
           </div>
         </div>
@@ -144,7 +212,7 @@ const Program = () => {
                   <CreditCardIcon className="h-6 w-6 text-indigo-600 mr-3" aria-hidden="true" />
                   <div>
                     <h3 className="font-medium text-gray-900">Commission Rate</h3>
-                    <p className="text-green-600">{program.commission}</p>
+                    <p className="text-green-600">{program.commission || programs.commission}</p>
                   </div>
                 </div>
                 
@@ -152,7 +220,7 @@ const Program = () => {
                   <CalendarIcon className="h-6 w-6 text-indigo-600 mr-3" aria-hidden="true" />
                   <div>
                     <h3 className="font-medium text-gray-900">Cookie Duration</h3>
-                    <p>{program.cookieDuration}</p>
+                    <p>{program.cookieDuration || programs.cookieDuration}</p>
                   </div>
                 </div>
                 
@@ -160,7 +228,7 @@ const Program = () => {
                   <ChartBarIcon className="h-6 w-6 text-indigo-600 mr-3" aria-hidden="true" />
                   <div>
                     <h3 className="font-medium text-gray-900">Average Earnings</h3>
-                    <p>{program.averageEarning}</p>
+                    <p>{program.averageEarning || programs.averageEarning}</p>
                   </div>
                 </div>
                 
@@ -168,7 +236,7 @@ const Program = () => {
                   <ShieldCheckIcon className="h-6 w-6 text-indigo-600 mr-3" aria-hidden="true" />
                   <div>
                     <h3 className="font-medium text-gray-900">Terms & Conditions</h3>
-                    <p className="text-gray-600">{program.terms}</p>
+                    <p className="text-gray-600">{program.terms || programs.terms}</p>
                   </div>
                 </div>
               </div>

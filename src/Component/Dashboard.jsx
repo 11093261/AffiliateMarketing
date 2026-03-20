@@ -11,12 +11,13 @@ import {
   ExclamationCircleIcon,
   CreditCardIcon,
   PencilIcon,
-  BanknotesIcon,
-  CogIcon
+  BanknotesIcon
 } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const BASE_URL = import.meta.env.VITE_API_URL || "https://afffiliate.onrender.com" || "http://localhost:4500";
+  const BASE_URL = "http://localhost:4500";
+  const navigate = useNavigate();
   
   // IMPORTANT: Check if getAuthToken exists before using it
   const { getAuthToken, user: authUser, logout } = useAuth();
@@ -42,7 +43,7 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [user, setUser] = useState({ 
     name: 'Alex M.', 
-    email: '', 
+    email: '',
     profile: {},
     paymentMethod: null
   });
@@ -73,26 +74,30 @@ const Dashboard = () => {
   useEffect(() => {
     fetchDashboardData();
     fetchRecommendedPrograms();
-    fetchUserProfile();
   }, []);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // IMPORTANT: Check if getAuthToken is a function
+      console.log('Fetching dashboard data...');
+      
       if (typeof getAuthToken !== 'function') {
-        throw new Error('getAuthToken is not available. Authentication may have failed.');
+        throw new Error('Authentication system error');
       }
       
       const token = getAuthToken();
       
       if (!token) {
-        throw new Error('No authentication token found. Please login again.');
+        console.error('No authentication token available');
+        logout();
+        navigate('/login');
+        return;
       }
-
-      console.log('Fetching dashboard with token:', token.substring(0, 20) + '...');
-
+      
+      console.log('Making request to:', `${BASE_URL}/api/dashboard`);
+      
       const response = await fetch(`${BASE_URL}/api/dashboard`, {
         method: 'GET',
         headers: {
@@ -101,34 +106,76 @@ const Dashboard = () => {
         }
       });
 
+      console.log('Response status:', response.status);
+      
+      const responseText = await response.text();
+      console.log('Response body:', responseText.substring(0, 200) + '...');
+      
       if (response.status === 401) {
-        // Token expired or invalid
+        console.log('Unauthorized - logging out');
         logout();
-        throw new Error('Session expired. Please login again.');
+        navigate('/login');
+        throw new Error('Your session has expired. Please login again.');
       }
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Dashboard fetch error:', errorText);
-        throw new Error(`Failed to fetch dashboard data: ${response.status}`);
+        throw new Error(`Server error: ${response.status}`);
       }
 
-      const data = await response.json();
+      // Parse response
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse JSON:', parseError);
+        throw new Error('Invalid response from server');
+      }
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to load dashboard');
+      }
+      
+      console.log('Dashboard data loaded successfully');
+      console.log('User data:', data.user);
+      console.log('Onboarding data:', data.onboarding);
+      console.log('Stats data:', data.stats);
       
       // Update state with fetched data
       setDashboardData(data);
-      setUser(prev => ({
-        ...prev,
-        ...data.user,
-        name: data.user?.name || prev.name
-      }));
-      setCompletedTasks(data.onboarding || {});
+      setUser(data.user || {});
+      setCompletedTasks({
+        profileCompleted: data.onboarding?.profileCompleted || false,
+        paymentCompleted: data.onboarding?.paymentCompleted || false,
+        firstLinkCreated: data.onboarding?.firstLinkCreated || false,
+        tutorialCompleted: data.onboarding?.tutorialCompleted || false
+      });
       setOnboardingProgress(data.onboarding?.progress || 40);
       setStats(data.stats || {});
       
+      // Update profile form with user data
+      if (data.user) {
+        setProfileForm(prev => ({
+          ...prev,
+          name: data.user.name || '',
+          bio: data.user.profile?.bio || '',
+          website: data.user.profile?.website || '',
+          socialLinks: {
+            twitter: data.user.profile?.socialLinks?.twitter || '',
+            facebook: data.user.profile?.socialLinks?.facebook || '',
+            instagram: data.user.profile?.socialLinks?.instagram || ''
+          }
+        }));
+      }
+      
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
+      console.error('Error fetching dashboard:', err);
       setError(err.message);
+      
+      // If it's an auth error, logout
+      if (err.message.includes('session') || err.message.includes('expired') || err.message.includes('authentication')) {
+        logout();
+      }
+      
       // Fallback to sample data if API fails
       setRecommendedPrograms([
         { _id: 1, name: "TechGadgets Pro", commission: "12-15%", category: "Electronics" },
@@ -138,45 +185,6 @@ const Dashboard = () => {
       ]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // NEW: Fetch user profile data
-  const fetchUserProfile = async () => {
-    try {
-      if (typeof getAuthToken !== 'function') return;
-      
-      const token = getAuthToken();
-      if (!token) return;
-
-      // Note: This endpoint might need to be created or adjust the dashboard endpoint to return profile data
-      // For now, we'll get profile from the dashboard data
-      const response = await fetch(`${BASE_URL}/api/dashboard`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.user?.profile) {
-          setProfileForm(prev => ({
-            ...prev,
-            name: data.user.name || '',
-            bio: data.user.profile.bio || '',
-            website: data.user.profile.website || '',
-            socialLinks: {
-              twitter: data.user.profile.socialLinks?.twitter || '',
-              facebook: data.user.profile.socialLinks?.facebook || '',
-              instagram: data.user.profile.socialLinks?.instagram || ''
-            }
-          }));
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching user profile:', err);
     }
   };
 
@@ -207,12 +215,33 @@ const Dashboard = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setRecommendedPrograms(data);
+        console.log('Recommended programs response:', data);
+        
+        if (data.success && data.programs) {
+          setRecommendedPrograms(data.programs);
+        } else {
+          console.log('No programs in response or success false:', data);
+          // Use fallback data if response is empty
+          setRecommendedPrograms([
+            { _id: 1, name: "TechGadgets Pro", commission: "12-15%", category: "Electronics" },
+            { _id: 2, name: "FitnessFuel", commission: "8% + bonuses", category: "Health" }
+          ]);
+        }
       } else {
         console.log('Recommended programs endpoint returned:', response.status);
+        // Use fallback data on error
+        setRecommendedPrograms([
+          { _id: 1, name: "TechGadgets Pro", commission: "12-15%", category: "Electronics" },
+          { _id: 2, name: "FitnessFuel", commission: "8% + bonuses", category: "Health" }
+        ]);
       }
     } catch (err) {
       console.error('Error fetching recommended programs:', err);
+      // Use fallback data on exception
+      setRecommendedPrograms([
+        { _id: 1, name: "TechGadgets Pro", commission: "12-15%", category: "Electronics" },
+        { _id: 2, name: "FitnessFuel", commission: "8% + bonuses", category: "Health" }
+      ]);
     }
   };
 
@@ -241,7 +270,7 @@ const Dashboard = () => {
       setOnboardingProgress(newProgress);
 
       // Send update to backend
-      const response = await fetch(`${BASE_URL}/api/onboarding/task`, {
+      const response = await fetch(`${BASE_URL}/api/users/onboarding/task`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -253,13 +282,19 @@ const Dashboard = () => {
       if (!response.ok) {
         // Revert if API call fails
         setCompletedTasks(completedTasks);
-        throw new Error('Failed to update task');
+        const errorText = await response.text();
+        throw new Error(`Failed to update task: ${errorText}`);
       }
 
       const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update task');
+      }
+      
       // Update with server response
-      setCompletedTasks(data.onboarding);
-      setOnboardingProgress(data.progress);
+      setCompletedTasks(data.onboarding || newCompletedTasks);
+      setOnboardingProgress(data.progress || newProgress);
 
     } catch (err) {
       console.error('Error updating task:', err);
@@ -282,6 +317,8 @@ const Dashboard = () => {
         throw new Error('No authentication token found');
       }
 
+      console.log('Updating profile with data:', profileForm);
+
       const response = await fetch(`${BASE_URL}/api/profile`, {
         method: 'PUT',
         headers: {
@@ -290,31 +327,38 @@ const Dashboard = () => {
         },
         body: JSON.stringify({
           name: profileForm.name,
-          profile: {
-            bio: profileForm.bio,
-            website: profileForm.website,
-            socialLinks: profileForm.socialLinks
-          }
+          bio: profileForm.bio,
+          website: profileForm.website,
+          socialLinks: profileForm.socialLinks
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update profile');
       }
 
       const data = await response.json();
+      console.log('Profile update response:', data);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update profile');
+      }
       
       // Update local state
       setUser(prev => ({
         ...prev,
         name: data.user?.name || profileForm.name,
-        profile: data.user?.profile || profileForm
+        profile: data.user?.profile || {
+          bio: profileForm.bio,
+          website: profileForm.website,
+          socialLinks: profileForm.socialLinks
+        }
       }));
       
       // Update onboarding task if this is first time
       if (!completedTasks.profileCompleted) {
-        updateOnboardingTask('profileCompleted');
+        await updateOnboardingTask('profileCompleted');
       }
       
       // Close modal and show success
@@ -330,6 +374,7 @@ const Dashboard = () => {
       alert(`Error: ${err.message}`);
     }
   };
+  
 
   // NEW: Update payment method
   const updatePaymentMethod = async () => {
@@ -340,20 +385,11 @@ const Dashboard = () => {
 
       const token = getAuthToken();
       
-      if (!token) {
+      if (!token){
         throw new Error('No authentication token found');
       }
 
-      const paymentMethodData = {
-        method: paymentForm.method,
-        ...(paymentForm.method === 'paypal' && { paypalEmail: paymentForm.paypalEmail }),
-        ...(paymentForm.method === 'bank' && {
-          bankName: paymentForm.bankName,
-          accountNumber: paymentForm.accountNumber,
-          accountName: paymentForm.accountName,
-          swiftCode: paymentForm.swiftCode
-        })
-      };
+      console.log('Updating payment method with data:', paymentForm);
 
       const response = await fetch(`${BASE_URL}/api/payment-method`, {
         method: 'PUT',
@@ -361,25 +397,30 @@ const Dashboard = () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(paymentMethodData)
+        body: JSON.stringify(paymentForm)
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update payment method');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update payment method');
       }
 
       const data = await response.json();
+      console.log('Payment method update response:', data);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update payment method');
+      }
       
       // Update local state
       setUser(prev => ({
         ...prev,
-        paymentMethod: paymentMethodData
+        paymentMethod: paymentForm
       }));
       
       // Update onboarding task if this is first time
       if (!completedTasks.paymentCompleted) {
-        updateOnboardingTask('paymentCompleted');
+        await updateOnboardingTask('paymentCompleted');
       }
       
       // Close modal and show success
@@ -422,11 +463,16 @@ const Dashboard = () => {
         const data = await response.json();
         alert(`Program joined successfully! Your affiliate link: ${data.link?.affiliateUrl || data.link}`);
         
-        // Refresh dashboard data to update firstLinkCreated status
+        // Update onboarding task if this is first link
+        if (!completedTasks.firstLinkCreated) {
+          await updateOnboardingTask('firstLinkCreated');
+        }
+        
+        // Refresh dashboard data
         await fetchDashboardData();
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to join program');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to join program');
       }
     } catch (err) {
       console.error('Error joining program:', err);
@@ -437,10 +483,13 @@ const Dashboard = () => {
   const handleCreateLink = () => {
     // Navigate to link creation page or open modal
     alert('Navigate to link creation page');
+    // In a real implementation:
+    // navigate('/create-link');
   };
 
   const handleViewAssets = () => {
-    alert('Navigate to promo materials page');
+    // Navigate to promo materials page
+    navigate("/Program");
   };
 
   const handleViewReports = async () => {
@@ -468,9 +517,15 @@ const Dashboard = () => {
         // Display performance data or navigate to reports page
         console.log('Performance data:', data);
         alert(`Performance report loaded. Total earnings: $${data.summary?.totalEarnings || 0}`);
+        // In a real implementation:
+        // navigate('/reports', { state: { performanceData: data } });
+      } else {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to load performance report');
       }
     } catch (err) {
       console.error('Error fetching performance report:', err);
+      alert(`Error: ${err.message}`);
     }
   };
 
@@ -731,9 +786,12 @@ const Dashboard = () => {
           <div className="p-6 md:p-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-800">Recommended Programs</h2>
-              <a href="#" className="text-indigo-600 hover:text-indigo-800 flex items-center">
+              <button 
+                onClick={() => navigate('/Program')}
+                className="text-indigo-600 hover:text-indigo-800 flex items-center"
+              >
                 View all <ArrowRightIcon className="h-4 w-4 ml-1" />
-              </a>
+              </button>
             </div>
             
             {recommendedPrograms.length === 0 ? (
@@ -742,6 +800,12 @@ const Dashboard = () => {
                   <LinkIcon className="h-6 w-6 text-indigo-600" />
                 </div>
                 <p className="text-gray-600">No recommended programs available</p>
+                <button 
+                  onClick={fetchRecommendedPrograms}
+                  className="mt-4 text-indigo-600 hover:text-indigo-800"
+                >
+                  Refresh
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

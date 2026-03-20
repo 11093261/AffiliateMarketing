@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-
+import { useAuth } from '../Component/context/AuthContext';
 const Payout = () => {
+   const BASE_URL = "http://localhost:4500";
   // State for form data
   const [payoutData, setPayoutData] = useState({
     method: 'paypal',
@@ -8,22 +9,61 @@ const Payout = () => {
     accountNumber: '',
     routingNumber: '',
     threshold: 50,
+    walletAddress:'',
     currency: 'USD',
     schedule: 'weekly'
   });
 
   // Handle form input changes
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setPayoutData(prev => ({ ...prev, [name]: value }));
+    
   };
-
+  const { getAuthToken, user: authUser, logout } = useAuth();
   // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async(e) => {
+    e.preventDefault()
+    try {
+      const token = getAuthToken()
+      const res = await fetch(`${BASE_URL}/api/postApayout`,payoutData,{
+        method:'POST',
+           headers: {
+          'Authorization': `Bearer ${token}`,
+          
+          'Content-Type': 'application/json'
+        }
+        
+      })
+      
+      setPayoutData({
+        method:"paypal",
+        threshold:50,
+        accountNumber:"",
+        walletAddress:"",
+        email:"",
+        schedule:"Weekly",
+        currency:"USD",
+        routingNumber:""
+
+
+        
+      })
+      console.log(setPayoutData(res.json()))
+      alert('Payout settings saved successfully!');
+      
+      // setPayoutData(res.data)
+      // setPayoutData(res.user)
     console.log('Payout settings saved:', payoutData);
+    } catch (error) {
+      if(error.res){
+        console.log(error.data)
+        console.log(error.status)
+        console.log(error.headers)
+      }
+      
+    }
     // Add API call to save data here
-    alert('Payout settings saved successfully!');
   };
 
   return (
@@ -43,7 +83,7 @@ const Payout = () => {
               <label 
                 key={method.id}
                 className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                  payoutData.method === method.id 
+                  payoutData.method=== method.id 
                     ? 'border-blue-500 bg-blue-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
@@ -212,7 +252,7 @@ const Payout = () => {
         {/* Save Button */}
         <div className="flex justify-end">
           <button
-            type="submit"
+            onSubmit={handleSubmit}
             className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
             Save Settings
