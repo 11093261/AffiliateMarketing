@@ -480,16 +480,14 @@ const Dashboard = () => {
     }
   };
 
+  // Updated: Navigate to link generator page
   const handleCreateLink = () => {
-    // Navigate to link creation page or open modal
-    alert('Navigate to link creation page');
-    // In a real implementation:
-    // navigate('/create-link');
+    navigate('/link-generator');
   };
 
+  // Updated: Navigate to marketplace (programs list)
   const handleViewAssets = () => {
-    // Navigate to promo materials page
-    navigate("/Program");
+    navigate('/marketplace');
   };
 
   const handleViewReports = async () => {
@@ -787,7 +785,7 @@ const Dashboard = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-800">Recommended Programs</h2>
               <button 
-                onClick={() => navigate('/Program')}
+                onClick={() => navigate('/marketplace')}
                 className="text-indigo-600 hover:text-indigo-800 flex items-center"
               >
                 View all <ArrowRightIcon className="h-4 w-4 ml-1" />
