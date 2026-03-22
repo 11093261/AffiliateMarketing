@@ -16,7 +16,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const BASE_URL = "http://localhost:4500";
+  // ✅ FIX: Use uppercase BASE_URL consistently
+  const BASE_URL = import.meta.env.VITE_API_URL || "https://afffiliate.onrender.com";
+
   const navigate = useNavigate();
   
   // IMPORTANT: Check if getAuthToken exists before using it
@@ -482,7 +484,7 @@ const Dashboard = () => {
 
   // Updated: Navigate to link generator page
   const handleCreateLink = () => {
-    navigate('/link-generator');
+    navigate('/linkgenerator');
   };
 
   // Updated: Navigate to marketplace (programs list)

@@ -24,7 +24,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/program" element={<Program />} />
-        <Route path="/link-generator" element={<LinkGenerator />} />
+        <Route path="/linkgenerator" element={<LinkGenerator />} />
         <Route path="/performance" element={<Performance />} />
         <Route path="/payout" element={<Payout />} />
         

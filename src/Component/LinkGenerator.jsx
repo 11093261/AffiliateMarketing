@@ -14,7 +14,7 @@ import { useAuth } from '../Component/context/AuthContext';
 
 const LinkGenerator = () => {
   const { getAuthToken, user } = useAuth();
-  const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4500';
+  const Base_url = import.meta.env.VITE_API_URL || "https://afffiliate.onrender.com"
 
   const [selectedProgram, setSelectedProgram] = useState('');
   const [customSlug, setCustomSlug] = useState('');
